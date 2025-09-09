@@ -326,10 +326,10 @@ workflow czid_non_host_alignment {
     }
   }
 
-  File deduped_out_m8 = select_first([RunCallHitsMinimap2WithFilter.deduped_out_m8, RunCallHitsMinimap2WithoutFilter.deduped_out_m8, ""])
-  File hitsummary = select_first([RunCallHitsMinimap2WithFilter.hitsummary, RunCallHitsMinimap2WithoutFilter.hitsummary, ""])
-  File counts_json = select_first([RunCallHitsMinimap2WithFilter.counts_json, RunCallHitsMinimap2WithoutFilter.counts_json, ""])
-  File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count, RunCallHitsMinimap2WithoutFilter.output_read_count])
+  File deduped_out_m8 = select_first(RunCallHitsMinimap2WithFilter.deduped_out_m8 + RunCallHitsMinimap2WithoutFilter.deduped_out_m8)
+  File hitsummary = select_first(RunCallHitsMinimap2WithFilter.hitsummary + RunCallHitsMinimap2WithoutFilter.hitsummary)
+  File counts_json = select_first(RunCallHitsMinimap2WithFilter.counts_json + RunCallHitsMinimap2WithoutFilter.counts_json)
+  File? output_read_count = select_first(RunCallHitsMinimap2WithFilter.output_read_count + RunCallHitsMinimap2WithoutFilter.output_read_count)
 
   call RunAlignment_minimap2_out {
     input:
@@ -374,8 +374,7 @@ workflow czid_non_host_alignment {
       docker_image_id = docker_image_id,
       s3_wd_uri = s3_wd_uri,
       counts_json_files = [
-        RunCallHitsMinimap2WithFilter.counts_json,
-        RunCallHitsMinimap2WithoutFilter.counts_json,
+        counts_json,
         RunCallHitsDiamond.counts_json
       ]
   }
