@@ -1,4 +1,4 @@
-version 1.1
+version 1.0
 
 task CombineTaxonCounts {
   input {
@@ -191,7 +191,7 @@ task RunCallHitsMinimap2 {
             output_m8="gsnap.deduped.m8",
             output_summary="gsnap.hitsummary.tab",
             min_alignment_length=~{min_read_length},
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
         )
@@ -200,7 +200,7 @@ task RunCallHitsMinimap2 {
             hit_level_path="gsnap.hitsummary.tab",
             count_type="~{count_type}",
             lineage_map_path="~{lineage_db}",
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
             duplicate_cluster_sizes_path="~{duplicate_cluster_size}",
@@ -310,7 +310,7 @@ workflow czid_non_host_alignment {
 
   }
 
-  File? effective_deuterostome_db_nt = if use_deuterostome_filter then deuterostome_db else null
+
 
   call RunAlignment_minimap2_out { 
     input:         
@@ -324,19 +324,44 @@ workflow czid_non_host_alignment {
       prefix= minimap2_prefix,
       minimap2_wdl_version=minimap2_wdl_version
   }
-  call RunCallHitsMinimap2{ 
-    input:
-      m8_file = RunAlignment_minimap2_out.out_m8,
-      lineage_db = lineage_db,
-      duplicate_cluster_size = duplicate_cluster_sizes_tsv,
-      taxon_blacklist = taxon_blacklist,
-      deuterostome_db = effective_deuterostome_db_nt,
-      accession2taxid = accession2taxid_db,
-      prefix = minimap2_prefix,
-      min_read_length = min_read_length,
-      docker_image_id = docker_image_id,
-      s3_wd_uri = s3_wd_uri,
+
+  scatter (enable_filter in [use_deuterostome_filter]) {
+    if (enable_filter) {
+      call RunCallHitsMinimap2 as RunCallHitsMinimap2WithFilter {
+        input:
+          m8_file = RunAlignment_minimap2_out.out_m8,
+          lineage_db = lineage_db,
+          duplicate_cluster_size = duplicate_cluster_sizes_tsv,
+          taxon_blacklist = taxon_blacklist,
+          deuterostome_db = deuterostome_db,
+          accession2taxid = accession2taxid_db,
+          prefix = minimap2_prefix,
+          min_read_length = min_read_length,
+          docker_image_id = docker_image_id,
+          s3_wd_uri = s3_wd_uri
+      }
+    }
+    if (!enable_filter) {
+      call RunCallHitsMinimap2 as RunCallHitsMinimap2WithoutFilter {
+        input:
+          m8_file = RunAlignment_minimap2_out.out_m8,
+          lineage_db = lineage_db,
+          duplicate_cluster_size = duplicate_cluster_sizes_tsv,
+          taxon_blacklist = taxon_blacklist,
+          accession2taxid = accession2taxid_db,
+          prefix = minimap2_prefix,
+          min_read_length = min_read_length,
+          docker_image_id = docker_image_id,
+          s3_wd_uri = s3_wd_uri
+      }
+    }
   }
+
+  File deduped_out_m8 = select_first([RunCallHitsMinimap2WithFilter.deduped_out_m8, RunCallHitsMinimap2WithoutFilter.deduped_out_m8])
+  File hitsummary = select_first([RunCallHitsMinimap2WithFilter.hitsummary, RunCallHitsMinimap2WithoutFilter.hitsummary])
+  File counts_json = select_first([RunCallHitsMinimap2WithFilter.counts_json, RunCallHitsMinimap2WithoutFilter.counts_json])
+  File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count, RunCallHitsMinimap2WithoutFilter.output_read_count])
+
   call RunAlignment_diamond_out {
     input: 
       fastas = [select_first([host_filter_out_gsnap_filter_merged_fa, host_filter_out_gsnap_filter_1_fa])], #select_all([host_filter_out_gsnap_filter_1_fa, host_filter_out_gsnap_filter_2_fa]),
@@ -366,7 +391,7 @@ workflow czid_non_host_alignment {
       docker_image_id = docker_image_id,
       s3_wd_uri = s3_wd_uri,
       counts_json_files = [
-        RunCallHitsMinimap2.counts_json,
+        counts_json,
         RunCallHitsDiamond.counts_json
       ]
   }
@@ -377,9 +402,9 @@ workflow czid_non_host_alignment {
       s3_wd_uri = s3_wd_uri,
       host_filter_out_gsnap_filter_fa = select_all([host_filter_out_gsnap_filter_1_fa, host_filter_out_gsnap_filter_2_fa, host_filter_out_gsnap_filter_merged_fa]),
       gsnap_m8 = RunAlignment_minimap2_out.out_m8,
-      gsnap_deduped_m8 = RunCallHitsMinimap2.deduped_out_m8,
-      gsnap_hitsummary_tab = RunCallHitsMinimap2.hitsummary,
-      gsnap_counts_with_dcr_json = RunCallHitsMinimap2.counts_json,
+      gsnap_deduped_m8 = deduped_out_m8,
+      gsnap_hitsummary_tab = hitsummary,
+      gsnap_counts_with_dcr_json = counts_json,
       rapsearch2_m8 = RunAlignment_diamond_out.out_m8,
       rapsearch2_deduped_m8 = RunCallHitsDiamond.deduped_out_m8,
       rapsearch2_hitsummary_tab = RunCallHitsDiamond.hitsummary,
@@ -390,11 +415,11 @@ workflow czid_non_host_alignment {
 
   output {
     File gsnap_out_gsnap_m8 = RunAlignment_minimap2_out.out_m8
-    File gsnap_out_gsnap_deduped_m8 = RunCallHitsMinimap2.deduped_out_m8
-    File gsnap_out_gsnap_hitsummary_tab = RunCallHitsMinimap2.hitsummary
-    File gsnap_out_gsnap_counts_with_dcr_json = RunCallHitsMinimap2.counts_json
+    File gsnap_out_gsnap_deduped_m8 = deduped_out_m8
+    File gsnap_out_gsnap_hitsummary_tab = hitsummary
+    File gsnap_out_gsnap_counts_with_dcr_json = counts_json
     File? minimap2_version = RunAlignment_minimap2_out.version
-    File? gsnap_out_count = RunCallHitsMinimap2.output_read_count
+    File? gsnap_out_count = output_read_count
     File rapsearch2_out_rapsearch2_m8 = RunAlignment_diamond_out.out_m8
     File rapsearch2_out_rapsearch2_deduped_m8 = RunCallHitsDiamond.deduped_out_m8
     File rapsearch2_out_rapsearch2_hitsummary_tab = RunCallHitsDiamond.hitsummary
