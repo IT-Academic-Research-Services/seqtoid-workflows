@@ -326,10 +326,10 @@ workflow czid_non_host_alignment {
     }
   }
 
-  File deduped_out_m8 = select_first(RunCallHitsMinimap2WithFilter.deduped_out_m8 + RunCallHitsMinimap2WithoutFilter.deduped_out_m8)
-  File hitsummary = select_first(RunCallHitsMinimap2WithFilter.hitsummary + RunCallHitsMinimap2WithoutFilter.hitsummary)
-  File counts_json = select_first(RunCallHitsMinimap2WithFilter.counts_json + RunCallHitsMinimap2WithoutFilter.counts_json)
-  File? output_read_count = select_first(RunCallHitsMinimap2WithFilter.output_read_count + RunCallHitsMinimap2WithoutFilter.output_read_count)
+  File deduped_out_m8 = select_first([RunCallHitsMinimap2WithFilter.deduped_out_m8[0], RunCallHitsMinimap2WithoutFilter.deduped_out_m8[0]])
+  File hitsummary = select_first([RunCallHitsMinimap2WithFilter.hitsummary[0], RunCallHitsMinimap2WithoutFilter.hitsummary[0]])
+  File counts_json = select_first([RunCallHitsMinimap2WithFilter.counts_json[0], RunCallHitsMinimap2WithoutFilter.counts_json[0]])
+  File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count[0], RunCallHitsMinimap2WithoutFilter.output_read_count[0]])
 
   call RunAlignment_minimap2_out {
     input:
