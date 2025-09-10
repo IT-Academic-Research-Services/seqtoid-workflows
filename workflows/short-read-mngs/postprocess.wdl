@@ -159,7 +159,7 @@ task BlastContigs_refined_gsnap_out {
     File lineage_db
     File accession2taxid
     File taxon_blacklist
-    File deuterostome_db
+    File? deuterostome_db
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
   }
@@ -251,7 +251,7 @@ task ComputeMergedTaxonCounts {
 
     File lineage_db
     File taxon_blacklist
-    File deuterostome_db
+    File? deuterostome_db
 
     Boolean use_deuterostome_filter
     Boolean use_taxon_whitelist
