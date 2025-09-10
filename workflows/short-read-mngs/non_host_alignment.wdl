@@ -292,7 +292,7 @@ workflow czid_non_host_alignment {
     String index_dir_suffix = index_version
     Int min_read_length = 36
     File deuterostome_db = "s3://czid-public-references/taxonomy/2021-01-22/deuterostome_taxids.txt"
-    Boolean use_deuterostome_filter = true
+    Boolean use_deuterostome_filter = false
     Boolean use_taxon_whitelist = false
     Boolean alignment_scalability = false
     File? local_gsnap_index
