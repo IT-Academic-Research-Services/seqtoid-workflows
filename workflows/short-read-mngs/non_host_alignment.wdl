@@ -164,14 +164,12 @@ task RunAlignment_diamond_out {
     }
 }
 
-    File? effective_deuterostome_db = if use_deuterostome_filter then deuterostome_db else None
-
 task RunCallHitsMinimap2 {
     input {
         File m8_file
         File lineage_db
         File taxon_blacklist
-        File deuterostome_db
+        File? deuterostome_db
         File accession2taxid
         File duplicate_cluster_size
         String prefix 
@@ -193,7 +191,7 @@ task RunCallHitsMinimap2 {
             output_m8="gsnap.deduped.m8",
             output_summary="gsnap.hitsummary.tab",
             min_alignment_length=~{min_read_length},
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
         )
@@ -202,7 +200,7 @@ task RunCallHitsMinimap2 {
             hit_level_path="gsnap.hitsummary.tab",
             count_type="~{count_type}",
             lineage_map_path="~{lineage_db}",
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
             duplicate_cluster_sizes_path="~{duplicate_cluster_size}",
@@ -227,7 +225,7 @@ task RunCallHitsDiamond {
         File m8_file
         File lineage_db
         File taxon_blacklist
-        File deuterostome_db
+        File? deuterostome_db
         File accession2taxid
         File duplicate_cluster_size
         String prefix 
@@ -248,7 +246,7 @@ task RunCallHitsDiamond {
             output_m8="rapsearch2.deduped.m8",
             output_summary="rapsearch2.hitsummary.tab",
             min_alignment_length=~{min_read_length},
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
         )
@@ -257,7 +255,7 @@ task RunCallHitsDiamond {
             hit_level_path="rapsearch2.hitsummary.tab",
             count_type="~{count_type}",
             lineage_map_path="~{lineage_db}",
-            deuterostome_path="~{deuterostome_db}",
+            deuterostome_path=~{if defined(deuterostome_db) then '"~{deuterostome_db}"' else 'None'},
             taxon_whitelist_path=None,
             taxon_blacklist_path="~{taxon_blacklist}",
             duplicate_cluster_sizes_path="~{duplicate_cluster_size}",
@@ -312,6 +310,8 @@ workflow czid_non_host_alignment {
     String diamond_wdl_version = "v1.1.1"
 
   }
+    File? effective_deuterostome_db = if use_deuterostome_filter then deuterostome_db else None
+
   call RunAlignment_minimap2_out { 
     input:         
       docker_image_id = docker_image_id,
@@ -330,7 +330,7 @@ workflow czid_non_host_alignment {
       lineage_db = lineage_db,
       duplicate_cluster_size = duplicate_cluster_sizes_tsv,
       taxon_blacklist = taxon_blacklist,
-      deuterostome_db = deuterostome_db,
+      deuterostome_db = effective_deuterostome_db,
       accession2taxid = accession2taxid_db,
       prefix = minimap2_prefix,
       min_read_length = min_read_length,
@@ -355,7 +355,7 @@ workflow czid_non_host_alignment {
       lineage_db = lineage_db,
       duplicate_cluster_size = duplicate_cluster_sizes_tsv,
       taxon_blacklist = taxon_blacklist,
-      deuterostome_db = deuterostome_db,
+      deuterostome_db = effective_deuterostome_db,
       accession2taxid = accession2taxid_db,
       prefix = diamond_prefix,
       docker_image_id = docker_image_id,
