@@ -96,7 +96,7 @@ task RunAlignment_minimap2_out {
           aligner_wdl_version="~{minimap2_wdl_version}",
           queries=["~{sep='", "' fastas}"],
       )
-      CODE
+CODE
     fi
     python3 /usr/local/lib/python3.6/dist-packages/idseq_utils/paf2blast6.py gsnap.paf
     mv *frompaf.m8 "gsnap.m8"
@@ -142,7 +142,7 @@ task RunAlignment_diamond_out {
           aligner_wdl_version="~{diamond_wdl_version}",
           queries=["~{sep='", "' fastas}"],
       )
-      CODE
+CODE
       diamond --version > diamond_version.txt
     fi
   >>>
