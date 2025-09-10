@@ -307,6 +307,19 @@ workflow czid_non_host_alignment {
       minimap2_wdl_version = minimap2_wdl_version
   }
 
+    call RunAlignment_diamond_out {
+    input:
+      fastas = [select_first([host_filter_out_gsnap_filter_merged_fa, host_filter_out_gsnap_filter_1_fa])],
+      s3_wd_uri = s3_wd_uri,
+      db_path = diamond_db,
+      diamond_args = diamond_args,
+      prefix = diamond_prefix,
+      run_locally = defined(diamond_local_db_path),
+      local_diamond_index = diamond_local_db_path,
+      diamond_wdl_version = diamond_wdl_version,
+      docker_image_id = docker_image_id
+  }
+
   scatter (enable_filter in [use_deuterostome_filter]) {
     if (enable_filter) {
       call RunCallHitsMinimap2 as RunCallHitsMinimap2WithFilter {
@@ -345,18 +358,7 @@ workflow czid_non_host_alignment {
       File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count[0], RunCallHitsMinimap2WithoutFilter.output_read_count[0], ""])
 
 
-  call RunAlignment_diamond_out {
-    input:
-      fastas = [select_first([host_filter_out_gsnap_filter_merged_fa, host_filter_out_gsnap_filter_1_fa])],
-      s3_wd_uri = s3_wd_uri,
-      db_path = diamond_db,
-      diamond_args = diamond_args,
-      prefix = diamond_prefix,
-      run_locally = defined(diamond_local_db_path),
-      local_diamond_index = diamond_local_db_path,
-      diamond_wdl_version = diamond_wdl_version,
-      docker_image_id = docker_image_id
-  }
+
 
   call RunCallHitsDiamond {
     input:
