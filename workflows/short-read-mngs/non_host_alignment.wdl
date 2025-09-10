@@ -164,6 +164,8 @@ task RunAlignment_diamond_out {
     }
 }
 
+    File? effective_deuterostome_db = if use_deuterostome_filter then deuterostome_db else None
+
 task RunCallHitsMinimap2 {
     input {
         File m8_file
