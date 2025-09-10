@@ -294,6 +294,19 @@ workflow czid_non_host_alignment {
     String diamond_wdl_version = "v1.1.1"
   }
 
+    call RunAlignment_minimap2_out {
+    input:
+      docker_image_id = docker_image_id,
+      s3_wd_uri = s3_wd_uri,
+      fastas = [select_first([host_filter_out_gsnap_filter_merged_fa, host_filter_out_gsnap_filter_1_fa])],
+      db_path = minimap2_db,
+      minimap2_args = minimap2_args,
+      run_locally = defined(minimap2_local_db_path),
+      local_minimap2_index = minimap2_local_db_path,
+      prefix = minimap2_prefix,
+      minimap2_wdl_version = minimap2_wdl_version
+  }
+
   scatter (enable_filter in [use_deuterostome_filter]) {
     if (enable_filter) {
       call RunCallHitsMinimap2 as RunCallHitsMinimap2WithFilter {
@@ -326,22 +339,11 @@ workflow czid_non_host_alignment {
     }
   }
 
-  File deduped_out_m8 = select_first([RunCallHitsMinimap2WithFilter.deduped_out_m8[0], RunCallHitsMinimap2WithoutFilter.deduped_out_m8[0]])
-  File hitsummary = select_first([RunCallHitsMinimap2WithFilter.hitsummary[0], RunCallHitsMinimap2WithoutFilter.hitsummary[0]])
-  File counts_json = select_first([RunCallHitsMinimap2WithFilter.counts_json[0], RunCallHitsMinimap2WithoutFilter.counts_json[0]])
-  File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count[0], RunCallHitsMinimap2WithoutFilter.output_read_count[0], ""])
-  call RunAlignment_minimap2_out {
-    input:
-      docker_image_id = docker_image_id,
-      s3_wd_uri = s3_wd_uri,
-      fastas = [select_first([host_filter_out_gsnap_filter_merged_fa, host_filter_out_gsnap_filter_1_fa])],
-      db_path = minimap2_db,
-      minimap2_args = minimap2_args,
-      run_locally = defined(minimap2_local_db_path),
-      local_minimap2_index = minimap2_local_db_path,
-      prefix = minimap2_prefix,
-      minimap2_wdl_version = minimap2_wdl_version
-  }
+      File deduped_out_m8 = select_first([RunCallHitsMinimap2WithFilter.deduped_out_m8[0], RunCallHitsMinimap2WithoutFilter.deduped_out_m8[0]])
+      File hitsummary = select_first([RunCallHitsMinimap2WithFilter.hitsummary[0], RunCallHitsMinimap2WithoutFilter.hitsummary[0]])
+      File counts_json = select_first([RunCallHitsMinimap2WithFilter.counts_json[0], RunCallHitsMinimap2WithoutFilter.counts_json[0]])
+      File? output_read_count = select_first([RunCallHitsMinimap2WithFilter.output_read_count[0], RunCallHitsMinimap2WithoutFilter.output_read_count[0], ""])
+
 
   call RunAlignment_diamond_out {
     input:
